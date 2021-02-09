@@ -1,58 +1,71 @@
-#Import csv
-import csv
-
-# Import smtplib for the actual sending function
+# Import Python Packages
 import smtplib
-import string
-
-# Import the email modules we'll need
+import csv
+import getpass
 from email.message import EmailMessage
 
-def process_file(inputfile):
+def connect_gmail(email, password):
     
-    with open(inputfile, mode='r', encoding='UTF-8') as csvfile:
-        bulkreader = csv.reader(csvfile, delimiter=';')
-        for row in bulkreader:
-            
-            fullname, email, subject, body, cc_recipients = row
 
-            smtp_gmail(fullname, email, subject, body, cc_recipients)
+    smtp_object = smtplib.SMTP('smtp.gmail.com', 587)
+    smtp_object.ehlo()
+    smtp_object.starttls()
+    smtp_object.login(email, password)
+    return smtp_object 
 
-# Open the plain text file whose name is in textfile for reading.
-def send_email(fullname, email, subject, body, cc_recipients):
-
-    # Create a text/plain message
-    msg = EmailMessage()
-    msg.set_content(body)
-    msg['Subject'] = subject
-    msg['From'] = 'matthias.vanlanduyt@gmail.com'
-    msg['To'] = email
-
-    # Send the message via our own SMTP server.
-    s = smtplib.SMTP('localhost')
-    s.send_message(msg)
-    s.quit()
-
-def smtp_gmail(fullname, email, subject, body, cc_recipients):
-    username = "matthias.vanlanduyt@gmail.com"
-    password = "****"
-    smtp_server = "smtp.gmail.com:587"
-    email_from = "matthias.vanlanduyt@gmail.com"
-    email_to = email
-    email_body = 'Test test test'
-    # email_body = string.join((
-    #     "From: %s" % email_from,
-    #     "To: %s" % email_to,
-    #     "Subject: This is my subject line!",
-    #     "",
-    #     "This is my message that can also have a %s" % ('Test'
-    #     ),), "\r\n"
-    #     )
+# def process_file(inputfile):
     
-    server = smtplib.SMTP(smtp_server)
-    server.starttls()
-    server.login(username, password)
-    server.sendmail(email_from, email_to, email_body)
+    
+
+def script(inputfile):
+
+    while True:
+        email_server = input('Are you using gmail? Say yes to proceed (we dont support other providers at this stage)')
+        if email_server[0] in ('Y', 'y'):
+            break
+        print("Told you we don't support that!")
+    
+    sender_email = getpass.getpass('Email from which emails will be send: ')
+    sender_password = getpass.getpass('Password: ')
+    server = connect_gmail(sender_email, sender_password)
+    server.set_debuglevel(1)
+
+    with open(inputfile, mode='r', encoding='utf-8') as csvfile:
+        csv_data = csv.reader(csvfile, delimiter=';')
+        data_lines = list(csv_data)
+        for row in data_lines[1:]:
+            try:
+                
+                fullname, recipient_email, subject, body, cc_recipients = row
+                # msg = 'Subject: ' + subject + '\n' + body
+
+
+                # print(f'New row: \nFrom:{sender_email}\nTo:{recipient_email}\nMessage:{msg}')
+                # server.sendmail(sender_email, recipient_email, msg)
+
+                msg = EmailMessage()
+                msg.set_content(body)
+                msg['Subject'] = subject
+                msg['From'] = sender_email
+                msg['To'] = fullname + ' <' + recipient_email + '>'
+                msg['Cc'] = cc_recipients
+
+                # Send the message via our own SMTP server.
+                server.send_message(msg)
+
+            except:
+                print('Could not send email.')
     server.quit()
 
-process_file('inputfile.csv')
+# mail_message = '''\
+# From: %s
+# To: %s
+# Subject: %s
+# %s
+# ''' % (mail_from, mail_to, mail_subject, mail_message_body)# Sent Email
+# server = smtplib.SMTP_SSL('smtp.gmail.com', 465)
+# server.login(gmail_user, gmail_password)
+
+
+
+script('inputfile.csv')
